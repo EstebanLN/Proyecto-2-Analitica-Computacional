@@ -16,7 +16,7 @@ app.title = "Resultados Saber 11"
 app.layout = dbc.Container([
     html.Div([
         html.Div(
-            html.H1("Resultados Saber 11", style={"margin": "0", "color": "#003366", "fontWeight": "normal"}),
+            html.H1("Resultados Saber 11-2018", style={"margin": "0", "color": "#003366", "fontWeight": "normal"}),
             style={"flex": "1"}
         ),
         html.Img(src="/assets/icfes.png", style={"height": "60px"})
@@ -66,7 +66,7 @@ app.layout = dbc.Container([
 def render_tab_content(tab):
     if tab == "tab-visual":
         return html.Div([
-            html.H4("Distribución del Puntaje Global Promedio"),
+            html.H4("Factores Socioeconómicos, Demográficos y Espaciales"),
 
             html.Div([
                 html.Div([dcc.Graph(id="grafico-estrato")], style={"width": "50%", "display": "inline-block", "padding": "10px"}),
@@ -93,13 +93,28 @@ def actualizar_grafico_estrato(_):
 
 @app.callback(Output("grafico-genero", "figure"), Input("tabs", "value"))
 def actualizar_grafico_genero(_):
-    df_avg = df.groupby("estu_genero", as_index=False)["punt_global"].mean().round(2)
-    fig = px.bar(df_avg, x="estu_genero", y="punt_global",
-                 labels={"estu_genero": "Género", "punt_global": "Puntaje Promedio"},
-                 title="Promedio del Puntaje Global según Género",
-                 color="estu_genero",
-                 color_discrete_sequence=px.colors.sequential.Blues_r)
-    fig.update_layout(plot_bgcolor="#e6f0fa", paper_bgcolor="#e6f0fa", font=dict(color="#003366"))
+    # Limpiar valores nulos
+    df_filtrado = df[df["estu_genero"].notna() & df["punt_global"].notna()]
+
+    fig = px.violin(
+        df_filtrado,
+        x="estu_genero",
+        y="punt_global",
+        box=True,                     
+        color="estu_genero",
+        color_discrete_sequence=px.colors.sequential.Blues_r,
+        title="Distribución del Puntaje Global por Género"
+    )
+
+    fig.update_layout(
+        xaxis_title="Género",
+        yaxis_title="Puntaje Global",
+        plot_bgcolor="#e6f0fa",
+        paper_bgcolor="#e6f0fa",
+        font_color="#003366",
+        legend_title="Género"
+    )
+
     return fig
 
 @app.callback(Output("grafico-mapa", "figure"), Input("tabs", "value"))
