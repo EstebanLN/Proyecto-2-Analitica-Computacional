@@ -8,6 +8,35 @@ import json
 # Cargar datos
 df = pd.read_csv("Clean_data.csv")
 
+# Diccionario de etiquetas legibles para cada campo
+etiquetas = {
+    "cole_area_ubicacion": "Área del colegio",
+    "cole_bilingue": "¿El colegio es bilingüe?",
+    "cole_calendario": "Calendario del colegio",
+    "cole_caracter": "Carácter del colegio",
+    "cole_genero": "Género del colegio",
+    "cole_jornada": "Jornada del colegio",
+    "cole_naturaleza": "Naturaleza del colegio",
+    "cole_depto_ubicacion": "Departamento del colegio",
+    "cole_mcpio_ubicacion": "Municipio del colegio",
+    "estu_tipodocumento": "Tipo de documento",
+    "estu_genero": "Género del estudiante",
+    "estu_depto_reside": "Departamento de residencia",
+    "estu_mcpio_reside": "Municipio de residencia",
+    "estu_nacionalidad": "Nacionalidad",
+    "estu_pais_reside": "País de residencia",
+    "estu_privado_libertad": "¿Privado de libertad?",
+    "fami_cuartoshogar": "Número de cuartos en el hogar",
+    "fami_educacionmadre": "Educación de la madre",
+    "fami_educacionpadre": "Educación del padre",
+    "fami_estratovivienda": "Estrato",
+    "fami_personashogar": "Número de personas en el hogar",
+    "fami_tieneautomovil": "¿Tiene automóvil?",
+    "fami_tienecomputador": "¿Tiene computador?",
+    "fami_tieneinternet": "¿Tiene internet?",
+    "fami_tienelavadora": "¿Tiene lavadora?"
+}
+
 # Inicializar app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 app.title = "Resultados Saber 11"
@@ -68,99 +97,42 @@ app.layout = dbc.Container([
 
 @app.callback(Output("tabs-content", "children"), Input("tabs", "value"))
 def render_tab_content(tab):
-    if tab == "tab-visual":
+    if tab == "tab-entrada":
+        campos = list(etiquetas.keys())
+
+        children = []
+        for i in range(0, len(campos), 2):
+            fila = []
+            for j in range(2):
+                if i + j < len(campos):
+                    campo = campos[i + j]
+                    col = dbc.Col([
+                        html.Label(etiquetas.get(campo, campo), style={"color": "#003366"}),
+                        dcc.Dropdown(
+                            id=campo,
+                            options=[{"label": val, "value": val} for val in df[campo].dropna().unique()],
+                            placeholder="Seleccione...",
+                            style={"backgroundColor": "white", "color": "#003366"}
+                        )
+                    ])
+                    fila.append(col)
+            children.append(dbc.Row(fila, className="mb-3"))
+
         return html.Div([
-            html.H4("Factores Socioeconómicos, Demográficos y Espaciales"),
+            html.H4("Por favor, complete todos los campos requeridos con la información del estudiante.", style={"color": "#003366"}),
+            dbc.Container(children)
+        ], style={"padding": "20px", "backgroundColor": "#e6f0fa", "color": "#003366"})
+
+    elif tab == "tab-visual":
+        return html.Div([
+            html.H4("Factores Socioeconómicos, Demográficos y Espaciales", style={"color": "#003366"}),
             html.Div([
                 html.Div([dcc.Graph(id="grafico-estrato")], style={"width": "50%", "display": "inline-block", "padding": "10px"}),
                 html.Div([dcc.Graph(id="grafico-genero")], style={"width": "50%", "display": "inline-block", "padding": "10px"})
             ]),
             html.Div([dcc.Graph(id="grafico-mapa")], style={"padding": "10px"})
         ])
-    elif tab == "tab-entrada":
-        return html.Div([
-            html.H4("Formulario de Entrada de Datos", style={"color": "#003366"}),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Área de ubicación del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["URBANO", "RURAL"]], value="URBANO")
-                ]),
-                dbc.Col([
-                    html.Label("¿El colegio es bilingüe?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Calendario del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["A", "B", "OTRO"]], value="A")
-                ]),
-                dbc.Col([
-                    html.Label("Carácter del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["ACADÉMICO", "TÉCNICO", "OTRO"]], value="ACADÉMICO")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Jornada del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["MAÑANA", "TARDE", "ÚNICA", "NOCHE"]], value="ÚNICA")
-                ]),
-                dbc.Col([
-                    html.Label("Naturaleza del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["OFICIAL", "NO OFICIAL"]], value="OFICIAL")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Selecciona el género del estudiante:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["M", "F", "Desconocido"]], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("Selecciona la nacionalidad del estudiante:"),
-                    dcc.Dropdown(options=[{"label": "Colombia", "value": "Colombia"}, {"label": "Otra", "value": "Otra"}], value="Colombia")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Nivel educativo de la madre:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Primaria", "Secundaria", "Técnico", "Universitario", "Desconocido"]], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("Nivel educativo del padre:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Primaria", "Secundaria", "Técnico", "Universitario", "Desconocido"]], value="Desconocido")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Estrato de la vivienda:"),
-                    dcc.Dropdown(options=[{"label": str(i), "value": str(i)} for i in range(1, 7)] + [{"label": "Desconocido", "value": "Desconocido"}], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("Número de personas en el hogar:"),
-                    dcc.Dropdown(options=[{"label": str(i), "value": str(i)} for i in range(1, 11)] + [{"label": "Desconocido", "value": "Desconocido"}], value="Desconocido")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("¿La familia tiene automóvil?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("¿La familia tiene computador?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("¿La familia tiene internet?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("¿La familia tiene lavadora?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ])
-            ])
-        ], style={"padding": "20px", "backgroundColor": "#e6f0fa", "color": "#003366"})
+
     elif tab == "tab-modelo":
         return html.Div([
             html.H4("Predicción con Modelo (en construcción)"),
