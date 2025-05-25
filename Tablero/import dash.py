@@ -32,7 +32,7 @@ app.layout = dbc.Container([
 
     html.Div([
         html.P("En esta aplicación, podrás explorar los resultados de un estudio realizado por un grupo de estudiantes de la clase de analítica computacional para la toma de decisiones. Hemos diseñado esta plataforma para que puedas acceder a un análisis detallado de los resultados del ICFES 2018 en Colombia, permitiéndote comprender mejor las variables que influyen en el desempeño académico de los estudiantes."),
-        html.P("Además, tendrás la oportunidad de ingresar información de un nuevo estudiante en nuestra sección de predicciones. A través de este proceso, podrás evaluar su posible desempeño en el examen ICFES con base en las tendencias observadas en los datos existentes."),
+        html.P("Además, tendrás la oportunidad de ingresar información de un nuevo estudiante en nuestra sección de entrada de datos. A través de este proceso, podrás evaluar su posible desempeño en el examen ICFES con base en las tendencias observadas en los datos existentes."),
         html.P("Te invitamos a navegar por las diferentes secciones de la aplicación y descubrir todo lo que tenemos para ofrecerte.")
     ], style={
         "backgroundColor": "#f8fbff",
@@ -53,7 +53,11 @@ app.layout = dbc.Container([
                 "backgroundColor": "#e6f0fa", "color": "#003366", "fontWeight": "normal", "padding": "10px"},
                 selected_style={"backgroundColor": "#003366", "color": "white", "fontWeight": "bold", "padding": "10px"}
             ),
-            dcc.Tab(label="Predicciones", value="tab-modelo", style={
+            dcc.Tab(label="Entrada de Datos", value="tab-entrada", style={
+                "backgroundColor": "#e6f0fa", "color": "#003366", "fontWeight": "normal", "padding": "10px"},
+                selected_style={"backgroundColor": "#003366", "color": "white", "fontWeight": "bold", "padding": "10px"}
+            ),
+            dcc.Tab(label="Predicción", value="tab-modelo", style={
                 "backgroundColor": "#e6f0fa", "color": "#003366", "fontWeight": "normal", "padding": "10px"},
                 selected_style={"backgroundColor": "#003366", "color": "white", "fontWeight": "bold", "padding": "10px"}
             ),
@@ -74,10 +78,49 @@ def render_tab_content(tab):
             ]),
             html.Div([dcc.Graph(id="grafico-mapa")], style={"padding": "10px"})
         ])
+    elif tab == "tab-entrada":
+        return html.Div([
+            html.H4("Formulario de Entrada de Datos"),
+            html.Div([
+                dbc.Row([
+                    dbc.Col([html.Label("Género"), dcc.Dropdown(
+                        id="input-genero",
+                        options=[{"label": i, "value": i} for i in df["estu_genero"].dropna().unique()],
+                        placeholder="Seleccione género"
+                    )]),
+                    dbc.Col([html.Label("Estrato de Vivienda"), dcc.Dropdown(
+                        id="input-estrato",
+                        options=[{"label": i, "value": i} for i in df["fami_estratovivienda"].dropna().unique()],
+                        placeholder="Seleccione estrato"
+                    )])
+                ], className="mb-3"),
+
+                dbc.Row([
+                    dbc.Col([html.Label("Área del Colegio"), dcc.Dropdown(
+                        id="input-area",
+                        options=[{"label": i, "value": i} for i in df["cole_area_ubicacion"].dropna().unique()],
+                        placeholder="Seleccione área"
+                    )]),
+                    dbc.Col([html.Label("Departamento de Residencia"), dcc.Dropdown(
+                        id="input-departamento",
+                        options=[{"label": i, "value": i} for i in df["estu_depto_reside"].dropna().unique()],
+                        placeholder="Seleccione departamento"
+                    )])
+                ], className="mb-3"),
+
+                dbc.Row([
+                    dbc.Col([html.Label("Tiene Internet en el Hogar"), dcc.Dropdown(
+                        id="input-internet",
+                        options=[{"label": i, "value": i} for i in df["fami_tieneinternet"].dropna().unique()],
+                        placeholder="Seleccione una opción"
+                    )])
+                ], className="mb-3")
+            ])
+        ])
     elif tab == "tab-modelo":
         return html.Div([
             html.H4("Predicción con Modelo (en construcción)"),
-            html.P("Aquí irá el formulario para ingresar datos del estudiante y obtener su predicción.")
+            html.P("Aquí irá el modelo predictivo para estimar el puntaje global.")
         ])
 
 @app.callback(Output("grafico-estrato", "figure"), Input("tabs", "value"))
@@ -93,32 +136,19 @@ def actualizar_grafico_estrato(_):
 
 @app.callback(Output("grafico-genero", "figure"), Input("tabs", "value"))
 def actualizar_grafico_genero(_):
-    # Limpiar valores nulos
     df_filtrado = df[df["estu_genero"].notna() & df["punt_global"].notna()]
-
-    fig = px.violin(
-        df_filtrado,
-        x="estu_genero",
-        y="punt_global",
-        box=True,                     
-        color="estu_genero",
-        color_discrete_sequence=px.colors.sequential.Blues_r,
-        title="Distribución del Puntaje Global por Género"
-    )
-
-    fig.update_layout(
-        xaxis_title="Género",
-        yaxis_title="Puntaje Global",
-        plot_bgcolor="#e6f0fa",
-        paper_bgcolor="#e6f0fa",
-        font_color="#003366",
-        legend_title="Género"
-    )
-
+    fig = px.violin(df_filtrado, x="estu_genero", y="punt_global", box=True, points=False,
+                    color="estu_genero", color_discrete_sequence=px.colors.sequential.Blues_r,
+                    title="Distribución del Puntaje Global por Género")
+    fig.update_layout(xaxis_title="Género", yaxis_title="Puntaje Global",
+                      plot_bgcolor="#e6f0fa", paper_bgcolor="#e6f0fa",
+                      font_color="#003366", legend_title="Género")
     return fig
 
 @app.callback(Output("grafico-mapa", "figure"), Input("tabs", "value"))
 def actualizar_mapa(_):
+    df["estu_depto_reside"] = df["estu_depto_reside"].replace({"BOGOTA": "SANTAFE DE BOGOTA D.C"})
+
     df_map = df.groupby("estu_depto_reside", as_index=False).agg(
         punt_global=("punt_global", "mean"),
         num_estudiantes=("punt_global", "count")
@@ -128,18 +158,21 @@ def actualizar_mapa(_):
     with open("colombia_departamentos.json", encoding="utf-8") as f:
         geojson_colombia = json.load(f)
 
-    fig = px.choropleth(df_map, geojson=geojson_colombia, locations="estu_depto_reside",
-                        featureidkey="properties.NOMBRE_DPT",
-                        color="punt_global",
-                        color_continuous_scale="Blues",
-                        hover_name="estu_depto_reside",
-                        hover_data={"punt_global": True, "num_estudiantes": True, "estu_depto_reside": False},
-                        labels={"estu_depto_reside": "Departamento", "punt_global": "Puntaje Promedio", "num_estudiantes": "N. Estudiantes"},
-                        title="Puntaje Global Promedio por Departamento")
+    fig = px.choropleth(
+        df_map,
+        geojson=geojson_colombia,
+        locations="estu_depto_reside",
+        featureidkey="properties.NOMBRE_DPT",
+        color="punt_global",
+        color_continuous_scale="Blues",
+        hover_name="estu_depto_reside",
+        hover_data={"punt_global": True, "num_estudiantes": True, "estu_depto_reside": False},
+        labels={"estu_depto_reside": "Departamento", "punt_global": "Puntaje Promedio", "num_estudiantes": "N. Estudiantes"},
+        title="Puntaje Global Promedio por Departamento"
+    )
     fig.update_geos(fitbounds="locations", visible=False)
     fig.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0}, paper_bgcolor="#f8fbff")
     return fig
-
 # Ejecutar
 if __name__ == "__main__":
     app.run(debug=True)
