@@ -4,60 +4,88 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
 
-# Cargar datos
-df = pd.read_csv("tus_datos.csv")  # Cambia por tu archivo
+# Cargar datos CSV
+df = pd.read_csv("Clean_data.csv")
 
-# Inicializar la app con multipage support
-app = dash.Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.BOOTSTRAP])
-server = app.server
+# Inicializar la app
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP],    suppress_callback_exceptions=True )
+app.title = "Resultados Saber 11"
 
-# Diseño base con navegación
+# Layout con Tabs
 app.layout = dbc.Container([
-    dbc.NavbarSimple(
-        children=[
-            dbc.NavItem(dbc.NavLink("Visualizaciones", href="/visualizaciones")),
-            dbc.NavItem(dbc.NavLink("Modelo (próximamente)", href="/modelo")),
+    html.Div(
+        [
+            html.Div(
+                html.H1("Dashboard Saber 11", style={
+                    "fontWeight": "bold",
+                    "margin": "0",
+                    "color": "white"
+                }),
+                style={"flex": "1"}
+            ),
+            html.Img(
+                src="/assets/icfes.png",  # Asegúrate de que el archivo esté en la carpeta assets/
+                style={"height": "60px"}
+            )
         ],
-        brand="Dashboard Saber 11",
-        color="primary",
-        dark=True,
+        style={
+            "display": "flex",
+            "alignItems": "center",
+            "justifyContent": "space-between",
+            "padding": "20px",
+            "backgroundColor": "#003366",
+            "borderRadius": "8px",
+            "boxShadow": "0px 4px 6px rgba(0,0,0,0.2)"
+        }
     ),
-    dash.page_container
-])
+    
+    dcc.Tabs(id="tabs", value="tab-visual", children=[
+        dcc.Tab(label="📊 Visualización de Datos", value="tab-visual"),
+        dcc.Tab(label="🤖 Modelo Predictivo", value="tab-modelo"),
+    ]),
+    html.Div(id="tabs-content")
+], fluid=True)
 
-# ------------------ Página de Visualizaciones ------------------
 
-dash.register_page("visualizaciones", path="/visualizaciones")
+# Callback para actualizar el contenido según la pestaña seleccionada
+@app.callback(
+    Output("tabs-content", "children"),
+    Input("tabs", "value")
+)
+def render_tab_content(tab):
+    if tab == "tab-visual":
+        return html.Div([
+            html.H4("Distribución del Puntaje Global por Categoría"),
+            dcc.Dropdown(
+                id="dropdown-variable",
+                options=[{"label": var, "value": var} for var in [
+                    "cole_area_ubicacion",
+                    "fami_estratovivienda",
+                    "cole_jornada",
+                    "estu_genero",
+                    "fami_tieneinternet",
+                    "fami_tienecomputador"
+                ]],
+                value="fami_estratovivienda",
+                style={"width": "50%"}
+            ),
+            dcc.Graph(id="boxplot-output")
+        ])
+    elif tab == "tab-modelo":
+        return html.Div([
+            html.H4("Predicción con Modelo (en construcción)"),
+            html.P("Aquí irá el formulario para ingresar datos del estudiante y obtener su predicción.")
+        ])
 
-layout_visualizaciones = dbc.Container([
-    html.H2("Exploración de Puntaje Global"),
-    dcc.Dropdown(
-        id="dropdown-variable",
-        options=[{"label": var, "value": var} for var in ["cole_area_ubicacion", "fami_estratovivienda", "cole_jornada"]],
-        value="fami_estratovivienda"
-    ),
-    dcc.Graph(id="boxplot-output")
-])
-
-@dash.callback(
+# Callback para actualizar gráfico en la pestaña de visualización
+@app.callback(
     Output("boxplot-output", "figure"),
     Input("dropdown-variable", "value")
 )
-def update_boxplot(var):
+def update_graph(var):
     fig = px.box(df, x=var, y="punt_global", title=f"Puntaje global según {var}")
     return fig
 
-# ------------------ Página futura del modelo ------------------
-
-dash.register_page("modelo", path="/modelo")
-
-layout_modelo = dbc.Container([
-    html.H2("Predicción con Modelo (en construcción)"),
-    html.P("Aquí irá el formulario para ingresar datos del estudiante y obtener su predicción.")
-])
-
-# ------------------ Ejecutar ------------------
-
+# Ejecutar app
 if __name__ == "__main__":
     app.run(debug=True)
-
