@@ -1,12 +1,29 @@
 import dash
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
 import json
+import numpy as np
+from keras.models import load_model
+from sklearn.preprocessing import OneHotEncoder
+
+# Cargar modelo
+modelo = load_model("modelo_clasificacion.keras")
 
 # Cargar datos
 df = pd.read_csv("Clean_data.csv")
+
+# Variables utilizadas por el modelo (en orden)
+variables_modelo = [
+    "cole_area_ubicacion", "cole_bilingue", "cole_calendario", "cole_caracter",
+    "cole_genero", "cole_jornada", "cole_naturaleza", "cole_depto_ubicacion",
+    "cole_mcpio_ubicacion", "estu_tipodocumento", "estu_genero", "estu_depto_reside",
+    "estu_mcpio_reside", "estu_nacionalidad", "estu_pais_reside", "estu_privado_libertad",
+    "fami_cuartoshogar", "fami_educacionmadre", "fami_educacionpadre", "fami_estratovivienda",
+    "fami_personashogar", "fami_tieneautomovil", "fami_tienecomputador", "fami_tieneinternet",
+    "fami_tienelavadora"
+]
 
 # Diccionario de etiquetas legibles para cada campo
 etiquetas = {
@@ -41,87 +58,58 @@ etiquetas = {
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 app.title = "Resultados Saber 11"
 
-# Layout principal
 app.layout = dbc.Container([
     html.Div([
-        html.Div(
-            html.H1("Resultados Saber 11-2018", style={"margin": "0", "color": "#003366", "fontWeight": "normal"}),
-            style={"flex": "1"}
-        ),
+        html.Div(html.H1("Resultados Saber 11-2018", style={"margin": "0", "color": "#003366", "fontWeight": "normal"}), style={"flex": "1"}),
         html.Img(src="/assets/icfes.png", style={"height": "60px"})
-    ], style={
-        "display": "flex",
-        "alignItems": "center",
-        "justifyContent": "space-between",
-        "padding": "20px",
-        "backgroundColor": "#e6f0fa",
-        "borderRadius": "8px",
-        "boxShadow": "0px 4px 6px rgba(0,0,0,0.1)"
-    }),
+    ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between", "padding": "20px", "backgroundColor": "#e6f0fa", "borderRadius": "8px", "boxShadow": "0px 4px 6px rgba(0,0,0,0.1)"}),
 
     html.Div([
         html.P("En esta aplicación, podrás explorar los resultados de un estudio realizado por un grupo de estudiantes de la clase de analítica computacional para la toma de decisiones. Hemos diseñado esta plataforma para que puedas acceder a un análisis detallado de los resultados del ICFES 2018 en Colombia, permitiéndote comprender mejor las variables que influyen en el desempeño académico de los estudiantes."),
         html.P("Además, tendrás la oportunidad de ingresar información de un nuevo estudiante en nuestra sección de entrada de datos. A través de este proceso, podrás evaluar su posible desempeño en el examen ICFES con base en las tendencias observadas en los datos existentes."),
         html.P("Te invitamos a navegar por las diferentes secciones de la aplicación y descubrir todo lo que tenemos para ofrecerte.")
-    ], style={
-        "backgroundColor": "#f8fbff",
-        "padding": "20px",
-        "marginTop": "20px",
-        "marginBottom": "20px",
-        "borderRadius": "8px",
-        "color": "#003366",
-        "fontSize": "16px",
-        "lineHeight": "1.6"
-    }),
+    ], style={"backgroundColor": "#f8fbff", "padding": "20px", "marginTop": "20px", "marginBottom": "20px", "borderRadius": "8px", "color": "#003366", "fontSize": "16px", "lineHeight": "1.6"}),
 
-    dcc.Tabs(
-        id="tabs",
-        value="tab-visual",
-        children=[
-            dcc.Tab(label="Visualización de Datos", value="tab-visual", style={
-                "backgroundColor": "#e6f0fa", "color": "#003366", "fontWeight": "normal", "padding": "10px"},
-                selected_style={"backgroundColor": "#003366", "color": "white", "fontWeight": "bold", "padding": "10px"}
-            ),
-            dcc.Tab(label="Entrada de Datos", value="tab-entrada", style={
-                "backgroundColor": "#e6f0fa", "color": "#003366", "fontWeight": "normal", "padding": "10px"},
-                selected_style={"backgroundColor": "#003366", "color": "white", "fontWeight": "bold", "padding": "10px"}
-            ),
-            dcc.Tab(label="Predicción", value="tab-modelo", style={
-                "backgroundColor": "#e6f0fa", "color": "#003366", "fontWeight": "normal", "padding": "10px"},
-                selected_style={"backgroundColor": "#003366", "color": "white", "fontWeight": "bold", "padding": "10px"}
-            ),
-        ]
-    ),
+    dcc.Tabs(id="tabs", value="tab-visual", children=[
+        dcc.Tab(label="Visualización de Datos", value="tab-visual", style={"backgroundColor": "#e6f0fa", "color": "#003366"}, selected_style={"backgroundColor": "#003366", "color": "white"}),
+        dcc.Tab(label="Entrada de Datos", value="tab-entrada", style={"backgroundColor": "#e6f0fa", "color": "#003366"}, selected_style={"backgroundColor": "#003366", "color": "white"}),
+        dcc.Tab(label="Predicción", value="tab-modelo", style={"backgroundColor": "#e6f0fa", "color": "#003366"}, selected_style={"backgroundColor": "#003366", "color": "white"})
+    ]),
     html.Div(id="tabs-content")
 ], fluid=True)
 
 @app.callback(Output("tabs-content", "children"), Input("tabs", "value"))
 def render_tab_content(tab):
     if tab == "tab-entrada":
-        campos = list(etiquetas.keys())
-
         children = []
-        for i in range(0, len(campos), 2):
+        for i in range(0, len(variables_modelo), 2):
             fila = []
             for j in range(2):
-                if i + j < len(campos):
-                    campo = campos[i + j]
-                    col = dbc.Col([
-                        html.Label(etiquetas.get(campo, campo), style={"color": "#003366"}),
+                if i + j < len(variables_modelo):
+                    campo = variables_modelo[i + j]
+                    fila.append(dbc.Col([
+                        html.Label(etiquetas[campo], style={"color": "#003366"}),
                         dcc.Dropdown(
                             id=campo,
-                            options=[{"label": val, "value": val} for val in df[campo].dropna().unique()],
+                            options=[{"label": val, "value": val} for val in sorted(df[campo].dropna().unique())],
                             placeholder="Seleccione...",
                             style={"backgroundColor": "white", "color": "#003366"}
                         )
-                    ])
-                    fila.append(col)
+                    ]))
             children.append(dbc.Row(fila, className="mb-3"))
-
+        children.append(html.Div(dbc.Button("Predecir Puntaje", id="btn-predict", color="primary")))
+        children.append(html.Br())
+        children.append(html.Div(id="prediccion-output", style={"color": "#003366", "fontSize": "18px"}))
         return html.Div([
             html.H4("Por favor, complete todos los campos requeridos con la información del estudiante.", style={"color": "#003366"}),
             dbc.Container(children)
         ], style={"padding": "20px", "backgroundColor": "#e6f0fa", "color": "#003366"})
+
+    elif tab == "tab-modelo":
+        return html.Div([
+            html.H4("Predicción con Modelo", style={"color": "#003366"}),
+            html.Div(id="prediccion-output", style={"color": "#003366", "fontSize": "18px"})
+        ], style={"padding": "20px"})
 
     elif tab == "tab-visual":
         return html.Div([
@@ -131,12 +119,6 @@ def render_tab_content(tab):
                 html.Div([dcc.Graph(id="grafico-genero")], style={"width": "50%", "display": "inline-block", "padding": "10px"})
             ]),
             html.Div([dcc.Graph(id="grafico-mapa")], style={"padding": "10px"})
-        ])
-
-    elif tab == "tab-modelo":
-        return html.Div([
-            html.H4("Predicción con Modelo (en construcción)"),
-            html.P("Aquí irá el modelo predictivo para estimar el puntaje global.")
         ])
 
 @app.callback(Output("grafico-estrato", "figure"), Input("tabs", "value"))
@@ -187,6 +169,29 @@ def actualizar_mapa(_):
     fig.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0}, paper_bgcolor="#f8fbff")
     return fig
 
-# Ejecutar
+@app.callback(
+    Output("prediccion-output", "children"),
+    Input("btn-predict", "n_clicks"),
+    [State(c, "value") for c in variables_modelo]
+)
+def predecir(_, *valores):
+    if None in valores:
+        return "Por favor complete todos los campos para realizar la predicción."
+
+    df_input = pd.DataFrame([valores], columns=variables_modelo)
+    df_union = pd.concat([df[variables_modelo], df_input], axis=0)
+    df_encoded = pd.get_dummies(df_union)
+    df_encoded = df_encoded.fillna(0)
+    df_union.to_excel("datos_entrada.xlsx", index=False)
+    df_encoded.to_excel("datos_entrada_codificados.xlsx", index=False)
+
+    fila_pred = df_encoded.tail(1)
+    prediccion = modelo.predict(fila_pred)
+    puntaje = float(prediccion[0][0])
+    promedio = df["punt_global"].mean()
+    categoria = "Superior al promedio" if puntaje >= promedio else "Inferior al promedio"
+
+    return f"Puntaje estimado: {puntaje:.2f} — Categoría: {categoria}"
+
 if __name__ == "__main__":
     app.run(debug=True)
