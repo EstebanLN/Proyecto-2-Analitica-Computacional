@@ -1,0 +1,15 @@
+artifact_uri: file:///c:/Users/Juanita/Documents/Octavo%20semestre/Anal%C3%ADtica%20computacional%20para%20la%20toma%20de%20decisiones/Proyecto%202/Proyecto-2-Analitica-Computacional/Modelo/mlruns/597584697803882335/17de0f3e0ba34fc49915e5820cb3bd65/artifacts
+end_time: 1748204182079
+entry_point_name: ''
+experiment_id: '597584697803882335'
+lifecycle_stage: active
+run_id: 17de0f3e0ba34fc49915e5820cb3bd65
+run_name: Modelo7
+run_uuid: 17de0f3e0ba34fc49915e5820cb3bd65
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1748204112512
+status: 3
+tags: []
+user_id: Juanita
