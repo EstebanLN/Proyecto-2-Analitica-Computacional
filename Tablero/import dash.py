@@ -143,7 +143,7 @@ def predecir(_, *valores):
     puntaje = float(modelo.predict(fila_pred)[0][0])
     promedio = df["punt_global"].mean()
     categoria = "Superior al promedio" if puntaje >= promedio else "Inferior al promedio"
-    return f"Puntaje estimado: {puntaje:.2f} — Categoría: {categoria}"
+    return f"Categoría: {categoria}"
 
 if __name__ == "__main__":
     app.run(debug=True)
