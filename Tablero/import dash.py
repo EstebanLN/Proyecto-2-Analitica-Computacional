@@ -6,10 +6,10 @@ import plotly.express as px
 import json
 import numpy as np
 from keras.models import load_model
-from sklearn.preprocessing import OneHotEncoder
 
-# Cargar modelo
+# Cargar modelo y columnas usadas
 modelo = load_model("modelo_clasificacion.keras")
+columnas_modelo = np.load("columnas_modelo.npy", allow_pickle=True)
 
 # Cargar datos
 df = pd.read_csv("Clean_data.csv")
@@ -25,34 +25,7 @@ variables_modelo = [
     "fami_tienelavadora"
 ]
 
-# Diccionario de etiquetas legibles para cada campo
-etiquetas = {
-    "cole_area_ubicacion": "Área del colegio",
-    "cole_bilingue": "¿El colegio es bilingüe?",
-    "cole_calendario": "Calendario del colegio",
-    "cole_caracter": "Carácter del colegio",
-    "cole_genero": "Género del colegio",
-    "cole_jornada": "Jornada del colegio",
-    "cole_naturaleza": "Naturaleza del colegio",
-    "cole_depto_ubicacion": "Departamento del colegio",
-    "cole_mcpio_ubicacion": "Municipio del colegio",
-    "estu_tipodocumento": "Tipo de documento",
-    "estu_genero": "Género del estudiante",
-    "estu_depto_reside": "Departamento de residencia",
-    "estu_mcpio_reside": "Municipio de residencia",
-    "estu_nacionalidad": "Nacionalidad",
-    "estu_pais_reside": "País de residencia",
-    "estu_privado_libertad": "¿Privado de libertad?",
-    "fami_cuartoshogar": "Número de cuartos en el hogar",
-    "fami_educacionmadre": "Educación de la madre",
-    "fami_educacionpadre": "Educación del padre",
-    "fami_estratovivienda": "Estrato",
-    "fami_personashogar": "Número de personas en el hogar",
-    "fami_tieneautomovil": "¿Tiene automóvil?",
-    "fami_tienecomputador": "¿Tiene computador?",
-    "fami_tieneinternet": "¿Tiene internet?",
-    "fami_tienelavadora": "¿Tiene lavadora?"
-}
+etiquetas = {v: v.replace("_", " ").capitalize() for v in variables_modelo}
 
 # Inicializar app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
@@ -65,9 +38,8 @@ app.layout = dbc.Container([
     ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between", "padding": "20px", "backgroundColor": "#e6f0fa", "borderRadius": "8px", "boxShadow": "0px 4px 6px rgba(0,0,0,0.1)"}),
 
     html.Div([
-        html.P("En esta aplicación, podrás explorar los resultados de un estudio realizado por un grupo de estudiantes de la clase de analítica computacional para la toma de decisiones. Hemos diseñado esta plataforma para que puedas acceder a un análisis detallado de los resultados del ICFES 2018 en Colombia, permitiéndote comprender mejor las variables que influyen en el desempeño académico de los estudiantes."),
-        html.P("Además, tendrás la oportunidad de ingresar información de un nuevo estudiante en nuestra sección de entrada de datos. A través de este proceso, podrás evaluar su posible desempeño en el examen ICFES con base en las tendencias observadas en los datos existentes."),
-        html.P("Te invitamos a navegar por las diferentes secciones de la aplicación y descubrir todo lo que tenemos para ofrecerte.")
+        html.P("En esta aplicación, podrás explorar los resultados del ICFES 2018 en Colombia."),
+        html.P("Podrás ingresar información de un nuevo estudiante y estimar su puntaje."),
     ], style={"backgroundColor": "#f8fbff", "padding": "20px", "marginTop": "20px", "marginBottom": "20px", "borderRadius": "8px", "color": "#003366", "fontSize": "16px", "lineHeight": "1.6"}),
 
     dcc.Tabs(id="tabs", value="tab-visual", children=[
@@ -127,8 +99,7 @@ def actualizar_grafico_estrato(_):
     fig = px.bar(df_avg, x="fami_estratovivienda", y="punt_global",
                  labels={"fami_estratovivienda": "Estrato", "punt_global": "Puntaje Promedio"},
                  title="Promedio del Puntaje Global según Estrato",
-                 color="fami_estratovivienda",
-                 color_discrete_sequence=px.colors.sequential.Blues_r)
+                 color="fami_estratovivienda", color_discrete_sequence=px.colors.sequential.Blues_r)
     fig.update_layout(plot_bgcolor="#e6f0fa", paper_bgcolor="#e6f0fa", font=dict(color="#003366"))
     return fig
 
@@ -146,52 +117,34 @@ def actualizar_grafico_genero(_):
 @app.callback(Output("grafico-mapa", "figure"), Input("tabs", "value"))
 def actualizar_mapa(_):
     df["estu_depto_reside"] = df["estu_depto_reside"].replace({"BOGOTA": "SANTAFE DE BOGOTA D.C"})
-    df_map = df.groupby("estu_depto_reside", as_index=False).agg(
-        punt_global=("punt_global", "mean"),
-        num_estudiantes=("punt_global", "count")
-    )
+    df_map = df.groupby("estu_depto_reside", as_index=False).agg(punt_global=("punt_global", "mean"), num_estudiantes=("punt_global", "count"))
     df_map["punt_global"] = df_map["punt_global"].round(3)
     with open("colombia_departamentos.json", encoding="utf-8") as f:
         geojson_colombia = json.load(f)
-    fig = px.choropleth(
-        df_map,
-        geojson=geojson_colombia,
-        locations="estu_depto_reside",
-        featureidkey="properties.NOMBRE_DPT",
-        color="punt_global",
-        color_continuous_scale="Blues",
-        hover_name="estu_depto_reside",
-        hover_data={"punt_global": True, "num_estudiantes": True, "estu_depto_reside": False},
-        labels={"estu_depto_reside": "Departamento", "punt_global": "Puntaje Promedio", "num_estudiantes": "N. Estudiantes"},
-        title="Puntaje Global Promedio por Departamento"
-    )
+    fig = px.choropleth(df_map, geojson=geojson_colombia, locations="estu_depto_reside",
+                        featureidkey="properties.NOMBRE_DPT", color="punt_global",
+                        color_continuous_scale="Blues", hover_name="estu_depto_reside",
+                        hover_data={"punt_global": True, "num_estudiantes": True, "estu_depto_reside": False},
+                        labels={"estu_depto_reside": "Departamento", "punt_global": "Puntaje Promedio", "num_estudiantes": "N. Estudiantes"},
+                        title="Puntaje Global Promedio por Departamento")
     fig.update_geos(fitbounds="locations", visible=False)
     fig.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0}, paper_bgcolor="#f8fbff")
     return fig
 
-@app.callback(
-    Output("prediccion-output", "children"),
-    Input("btn-predict", "n_clicks"),
-    [State(c, "value") for c in variables_modelo]
-)
+@app.callback(Output("prediccion-output", "children"), Input("btn-predict", "n_clicks"), [State(var, "value") for var in variables_modelo])
 def predecir(_, *valores):
     if None in valores:
         return "Por favor complete todos los campos para realizar la predicción."
-
     df_input = pd.DataFrame([valores], columns=variables_modelo)
     df_union = pd.concat([df[variables_modelo], df_input], axis=0)
     df_encoded = pd.get_dummies(df_union)
-    df_encoded = df_encoded.fillna(0)
-    df_union.to_excel("datos_entrada.xlsx", index=False)
-    df_encoded.to_excel("datos_entrada_codificados.xlsx", index=False)
-
-    fila_pred = df_encoded.tail(1)
-    prediccion = modelo.predict(fila_pred)
-    puntaje = float(prediccion[0][0])
+    df_encoded = df_encoded.reindex(columns=columnas_modelo, fill_value=0)
+    fila_pred = df_encoded.tail(1).astype(float)
+    puntaje = float(modelo.predict(fila_pred)[0][0])
     promedio = df["punt_global"].mean()
     categoria = "Superior al promedio" if puntaje >= promedio else "Inferior al promedio"
-
     return f"Puntaje estimado: {puntaje:.2f} — Categoría: {categoria}"
 
 if __name__ == "__main__":
     app.run(debug=True)
+
