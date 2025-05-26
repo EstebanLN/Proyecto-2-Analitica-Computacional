@@ -236,6 +236,7 @@ def actualizar_mapa(_):
     fig.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0}, paper_bgcolor="#f8fbff")
     return fig
 
+<<<<<<< HEAD
 @app.callback(Output("prediccion-output", "children"), Input("btn-predict", "n_clicks"), [State(var, "value") for var in variables_modelo])
 def predecir(_, *valores):
     if None in valores:
@@ -250,6 +251,9 @@ def predecir(_, *valores):
     categoria = "Superior al promedio" if puntaje >= promedio else "Inferior al promedio"
     return f"Categoría: {categoria}"
 
+=======
+# Ejecutar
+>>>>>>> 23f15c1ec0fbb7d345af3e47623ce26ec9bb28b4
 if __name__ == "__main__":
     app.run(debug=True)
 
