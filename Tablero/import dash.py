@@ -1,23 +1,19 @@
 import dash
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.express as px
 import json
-<<<<<<< HEAD
 import numpy as np
 from keras.models import load_model
 
 # Cargar modelo y columnas usadas
 modelo = load_model("modelo_clasificacion.keras")
 columnas_modelo = np.load("columnas_modelo.npy", allow_pickle=True)
-=======
->>>>>>> 23f15c1ec0fbb7d345af3e47623ce26ec9bb28b4
 
 # Cargar datos
 df = pd.read_csv("Clean_data.csv")
 
-<<<<<<< HEAD
 # Variables utilizadas por el modelo (en orden)
 variables_modelo = [
     "cole_area_ubicacion", "cole_bilingue", "cole_calendario", "cole_caracter",
@@ -29,173 +25,109 @@ variables_modelo = [
     "fami_tienelavadora"
 ]
 
-etiquetas = {v: v.replace("_", " ").capitalize() for v in variables_modelo}
+# Diccionario de etiquetas legibles para cada campo
+etiquetas = {
+    "cole_area_ubicacion": "Área del colegio",
+    "cole_bilingue": "¿El colegio es bilingüe?",
+    "cole_calendario": "Calendario del colegio",
+    "cole_caracter": "Carácter del colegio",
+    "cole_genero": "Género del colegio",
+    "cole_jornada": "Jornada del colegio",
+    "cole_naturaleza": "Naturaleza del colegio",
+    "cole_depto_ubicacion": "Departamento del colegio",
+    "cole_mcpio_ubicacion": "Municipio del colegio",
+    "estu_tipodocumento": "Tipo de documento",
+    "estu_genero": "Género del estudiante",
+    "estu_depto_reside": "Departamento de residencia",
+    "estu_mcpio_reside": "Municipio de residencia",
+    "estu_nacionalidad": "Nacionalidad",
+    "estu_pais_reside": "País de residencia",
+    "estu_privado_libertad": "¿Privado de libertad?",
+    "fami_cuartoshogar": "Número de cuartos en el hogar",
+    "fami_educacionmadre": "Educación de la madre",
+    "fami_educacionpadre": "Educación del padre",
+    "fami_estratovivienda": "Estrato",
+    "fami_personashogar": "Número de personas en el hogar",
+    "fami_tieneautomovil": "¿Tiene automóvil?",
+    "fami_tienecomputador": "¿Tiene computador?",
+    "fami_tieneinternet": "¿Tiene internet?",
+    "fami_tienelavadora": "¿Tiene lavadora?"
+}
 
-=======
->>>>>>> 23f15c1ec0fbb7d345af3e47623ce26ec9bb28b4
 # Inicializar app
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 app.title = "Resultados Saber 11"
 
-# Layout principal
 app.layout = dbc.Container([
     html.Div([
-        html.Div(
-            html.H1("Resultados Saber 11-2018", style={"margin": "0", "color": "#003366", "fontWeight": "normal"}),
-            style={"flex": "1"}
-        ),
+        html.Div(html.H1("Resultados Saber 11", style={"margin": "0", "color": "#003366", "fontWeight": "normal"}), style={"flex": "1"}),
         html.Img(src="/assets/icfes.png", style={"height": "60px"})
-    ], style={
-        "display": "flex",
-        "alignItems": "center",
-        "justifyContent": "space-between",
-        "padding": "20px",
-        "backgroundColor": "#e6f0fa",
-        "borderRadius": "8px",
-        "boxShadow": "0px 4px 6px rgba(0,0,0,0.1)"
-    }),
+    ], style={"display": "flex", "alignItems": "center", "justifyContent": "space-between", "padding": "20px", "backgroundColor": "#e6f0fa", "borderRadius": "8px", "boxShadow": "0px 4px 6px rgba(0,0,0,0.1)"}),
 
     html.Div([
-<<<<<<< HEAD
-        html.P("En esta aplicación, podrás explorar los resultados del ICFES 2018 en Colombia."),
-        html.P("Podrás ingresar información de un nuevo estudiante y estimar su puntaje."),
-    ], style={"backgroundColor": "#f8fbff", "padding": "20px", "marginTop": "20px", "marginBottom": "20px", "borderRadius": "8px", "color": "#003366", "fontSize": "16px", "lineHeight": "1.6"}),
-=======
         html.P("En esta aplicación, podrás explorar los resultados de un estudio realizado por un grupo de estudiantes de la clase de analítica computacional para la toma de decisiones. Hemos diseñado esta plataforma para que puedas acceder a un análisis detallado de los resultados del ICFES 2018 en Colombia, permitiéndote comprender mejor las variables que influyen en el desempeño académico de los estudiantes."),
         html.P("Además, tendrás la oportunidad de ingresar información de un nuevo estudiante en nuestra sección de entrada de datos. A través de este proceso, podrás evaluar su posible desempeño en el examen ICFES con base en las tendencias observadas en los datos existentes."),
         html.P("Te invitamos a navegar por las diferentes secciones de la aplicación y descubrir todo lo que tenemos para ofrecerte.")
-    ], style={
-        "backgroundColor": "#f8fbff",
-        "padding": "20px",
-        "marginTop": "20px",
-        "marginBottom": "20px",
-        "borderRadius": "8px",
-        "color": "#003366",
-        "fontSize": "16px",
-        "lineHeight": "1.6"
-    }),
->>>>>>> 23f15c1ec0fbb7d345af3e47623ce26ec9bb28b4
+    ], style={"backgroundColor": "#f8fbff", "padding": "20px", "marginTop": "20px", "marginBottom": "20px", "borderRadius": "8px", "color": "#003366", "fontSize": "16px", "lineHeight": "1.6"}),
 
-    dcc.Tabs(
-        id="tabs",
-        value="tab-visual",
-        children=[
-            dcc.Tab(label="Visualización de Datos", value="tab-visual", style={
-                "backgroundColor": "#e6f0fa", "color": "#003366", "fontWeight": "normal", "padding": "10px"},
-                selected_style={"backgroundColor": "#003366", "color": "white", "fontWeight": "bold", "padding": "10px"}
-            ),
-            dcc.Tab(label="Entrada de Datos", value="tab-entrada", style={
-                "backgroundColor": "#e6f0fa", "color": "#003366", "fontWeight": "normal", "padding": "10px"},
-                selected_style={"backgroundColor": "#003366", "color": "white", "fontWeight": "bold", "padding": "10px"}
-            ),
-            dcc.Tab(label="Predicción", value="tab-modelo", style={
-                "backgroundColor": "#e6f0fa", "color": "#003366", "fontWeight": "normal", "padding": "10px"},
-                selected_style={"backgroundColor": "#003366", "color": "white", "fontWeight": "bold", "padding": "10px"}
-            ),
-        ]
-    ),
+
+    dcc.Tabs(id="tabs", value="tab-visual", children=[
+        dcc.Tab(label="Visualización de Datos-2018", value="tab-visual", style={"backgroundColor": "#e6f0fa", "color": "#003366"}, selected_style={"backgroundColor": "#003366", "color": "white"}),
+        dcc.Tab(label="Entrada de Datos", value="tab-entrada", style={"backgroundColor": "#e6f0fa", "color": "#003366"}, selected_style={"backgroundColor": "#003366", "color": "white"}),
+        dcc.Tab(label="Predicción", value="tab-modelo", style={"backgroundColor": "#e6f0fa", "color": "#003366"}, selected_style={"backgroundColor": "#003366", "color": "white"})
+    ]),
+
+    dcc.Store(id="store-prediccion"),  # Guarda el resultado entre pestañas
     html.Div(id="tabs-content")
 ], fluid=True)
 
 @app.callback(Output("tabs-content", "children"), Input("tabs", "value"))
 def render_tab_content(tab):
-    if tab == "tab-visual":
+    if tab == "tab-entrada":
+        children = []
+        for i in range(0, len(variables_modelo), 2):
+            fila = []
+            for j in range(2):
+                if i + j < len(variables_modelo):
+                    campo = variables_modelo[i + j]
+                    fila.append(dbc.Col([
+                        html.Label(etiquetas[campo], style={"color": "#003366"}),
+                        dcc.Dropdown(
+                            id=campo,
+                            options=[{"label": val, "value": val} for val in sorted(df[campo].dropna().unique())],
+                            placeholder="Seleccione...",
+                            style={"backgroundColor": "white", "color": "#003366"}
+                        )
+                    ]))
+            children.append(dbc.Row(fila, className="mb-3"))
+        children.append(html.Div(dbc.Button("Predecir Puntaje", id="btn-predict", color="primary")))
+        children.append(html.Br())
         return html.Div([
-            html.H4("Factores Socioeconómicos, Demográficos y Espaciales"),
+            html.H4("Por favor, complete todos los campos requeridos con la información del estudiante.", style={"color": "#003366"}),
+            dbc.Container(children)
+        ], style={"padding": "20px", "backgroundColor": "#e6f0fa", "color": "#003366"})
+
+    elif tab == "tab-modelo":
+        return html.Div([
+            html.H4("Predicción con Modelo", style={"color": "#003366"}),
+            dbc.Container([
+                dbc.Card([
+                    dbc.CardBody([
+                        html.H4("Resultado de la Predicción", className="card-title", style={"textAlign": "center", "color": "#003366"}),
+                        html.Div(id="prediccion-output", style={"textAlign": "center", "fontSize": "20px", "color": "#003366"})
+        ])
+    ], style={"boxShadow": "0 4px 12px rgba(0,0,0,0.15)", "borderRadius": "12px", "padding": "20px", "marginTop": "20px"})
+])
+        ], style={"padding": "20px"})
+
+    elif tab == "tab-visual":
+        return html.Div([
+            html.H4("Factores Socioeconómicos, Demográficos y Espaciales", style={"color": "#003366"}),
             html.Div([
                 html.Div([dcc.Graph(id="grafico-estrato")], style={"width": "50%", "display": "inline-block", "padding": "10px"}),
                 html.Div([dcc.Graph(id="grafico-genero")], style={"width": "50%", "display": "inline-block", "padding": "10px"})
             ]),
             html.Div([dcc.Graph(id="grafico-mapa")], style={"padding": "10px"})
-        ])
-    elif tab == "tab-entrada":
-        return html.Div([
-            html.H4("Formulario de Entrada de Datos", style={"color": "#003366"}),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Área de ubicación del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["URBANO", "RURAL"]], value="URBANO")
-                ]),
-                dbc.Col([
-                    html.Label("¿El colegio es bilingüe?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Calendario del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["A", "B", "OTRO"]], value="A")
-                ]),
-                dbc.Col([
-                    html.Label("Carácter del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["ACADÉMICO", "TÉCNICO", "OTRO"]], value="ACADÉMICO")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Jornada del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["MAÑANA", "TARDE", "ÚNICA", "NOCHE"]], value="ÚNICA")
-                ]),
-                dbc.Col([
-                    html.Label("Naturaleza del colegio:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["OFICIAL", "NO OFICIAL"]], value="OFICIAL")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Selecciona el género del estudiante:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["M", "F", "Desconocido"]], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("Selecciona la nacionalidad del estudiante:"),
-                    dcc.Dropdown(options=[{"label": "Colombia", "value": "Colombia"}, {"label": "Otra", "value": "Otra"}], value="Colombia")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Nivel educativo de la madre:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Primaria", "Secundaria", "Técnico", "Universitario", "Desconocido"]], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("Nivel educativo del padre:"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Primaria", "Secundaria", "Técnico", "Universitario", "Desconocido"]], value="Desconocido")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("Estrato de la vivienda:"),
-                    dcc.Dropdown(options=[{"label": str(i), "value": str(i)} for i in range(1, 7)] + [{"label": "Desconocido", "value": "Desconocido"}], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("Número de personas en el hogar:"),
-                    dcc.Dropdown(options=[{"label": str(i), "value": str(i)} for i in range(1, 11)] + [{"label": "Desconocido", "value": "Desconocido"}], value="Desconocido")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("¿La familia tiene automóvil?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("¿La familia tiene computador?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ])
-            ]),
-            dbc.Row([
-                dbc.Col([
-                    html.Label("¿La familia tiene internet?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ]),
-                dbc.Col([
-                    html.Label("¿La familia tiene lavadora?"),
-                    dcc.Dropdown(options=[{"label": i, "value": i} for i in ["Sí", "No", "Desconocido"]], value="Desconocido")
-                ])
-            ])
-        ], style={"padding": "20px", "backgroundColor": "#e6f0fa", "color": "#003366"})
-    elif tab == "tab-modelo":
-        return html.Div([
-            html.H4("Predicción con Modelo (en construcción)"),
-            html.P("Aquí irá el modelo predictivo para estimar el puntaje global.")
         ])
 
 @app.callback(Output("grafico-estrato", "figure"), Input("tabs", "value"))
@@ -236,20 +168,55 @@ def actualizar_mapa(_):
     fig.update_layout(margin={"r": 0, "t": 40, "l": 0, "b": 0}, paper_bgcolor="#f8fbff")
     return fig
 
-@app.callback(Output("prediccion-output", "children"), Input("btn-predict", "n_clicks"), [State(var, "value") for var in variables_modelo])
+
+def clasificar_desempeno(puntaje, promedio_nacional):
+    if puntaje < promedio_nacional * 0.9:
+        return 0  # bajo
+    elif puntaje < promedio_nacional * 1.1:
+        return 1  # medio
+    else:
+        return 2  # alto
+    
+# Callback para guardar predicción
+@app.callback(
+    Output("store-prediccion", "data"),
+    Input("btn-predict", "n_clicks"),
+    [State(var, "value") for var in variables_modelo]
+)
+
+
 def predecir(_, *valores):
     if None in valores:
-        return "Por favor complete todos los campos para realizar la predicción."
+        return "⚠️ Por favor complete todos los campos para realizar la predicción."
+
     df_input = pd.DataFrame([valores], columns=variables_modelo)
     df_union = pd.concat([df[variables_modelo], df_input], axis=0)
     df_encoded = pd.get_dummies(df_union)
     df_encoded = df_encoded.reindex(columns=columnas_modelo, fill_value=0)
     fila_pred = df_encoded.tail(1).astype(float)
+
     puntaje = float(modelo.predict(fila_pred)[0][0])
     promedio = df["punt_global"].mean()
-    categoria = "Superior al promedio" if puntaje >= promedio else "Inferior al promedio"
-    return f"Categoría: {categoria}"
+    categoria_num = clasificar_desempeno(puntaje, promedio)
+
+    # Etiquetas interpretables
+    etiquetas = {
+        0: "🔴 Bajo — por debajo del 90% del promedio nacional",
+        1: "🟡 Medio — alrededor del promedio nacional",
+        2: "🔵 Alto — por encima del 110% del promedio nacional"
+    }
+
+    return f"🎯 Categoría: {etiquetas[categoria_num]}"
+
+# Mostrar la predicción en ambas pestañas
+@app.callback(
+    Output("prediccion-output", "children"),
+    Input("store-prediccion", "data")
+)
+def mostrar_prediccion(resultado):
+    if not resultado:
+        return "🔎 Aún no se ha realizado ninguna predicción."
+    return resultado
 
 if __name__ == "__main__":
     app.run(debug=True)
-
